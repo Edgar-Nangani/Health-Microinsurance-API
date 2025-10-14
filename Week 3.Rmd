@@ -1,0 +1,129 @@
+# ================================
+# Week 3: Data Wrangling & Exploratory Analysis
+# ================================
+```{python}
+import os
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
+
+```{python}
+# Step 1: Load raw dataset
+raw_file = "C:/Users/HP/Desktop/Python Project/data/raw/raw.csv"
+if not os.path.exists(raw_file):
+    raise FileNotFoundError("Raw dataset not found. Please complete Week 2 first.")
+
+raw_data = pd.read_csv(raw_file)
+print(f"✅ Raw dataset loaded from {raw_file}")
+```
+```{python}
+# Step 2: Inspect the data
+print("\n--- Structure of raw data ---")
+print(raw_data.dtypes)
+
+print("\n--- Summary statistics ---")
+print(raw_data.describe(include='all'))
+
+print("\n--- Check for missing values ---")
+print(raw_data.isnull().sum())
+```
+
+```{python}
+# Step 3: Clean the data
+clean_data = raw_data.copy()
+clean_data["Gender"] = clean_data["Gender"].astype("category")
+clean_data["Age"] = pd.to_numeric(clean_data["Age"], errors="coerce")
+clean_data["Hospitalization"] = clean_data["Hospitalization"].astype("int")
+clean_data["ClaimCost"] = pd.to_numeric(clean_data["ClaimCost"], errors="coerce")
+
+# Filter target age group
+clean_data = clean_data[(clean_data["Age"] >= 18) & (clean_data["Age"] <= 35)]
+```
+
+
+```{python}
+# Step 4: Save cleaned dataset
+os.makedirs("data/clean", exist_ok=True)
+clean_file = "C:/Users/HP/Desktop/Python Project/data/clean/uganda_health_claims_clean.csv"
+clean_data.to_csv(clean_file, index=False)
+print(f"✅ Cleaned dataset saved to {clean_file}")
+```
+
+```{python}
+# Step 5: Exploratory Data Analysis (EDA)
+print("\n--- Exploratory Data Analysis ---")
+
+# Ensure reports folder exists
+os.makedirs("reports", exist_ok=True)
+
+# 🎯 Age Distribution
+plt.figure(figsize=(6, 4))
+sns.histplot(clean_data["Age"], bins=10, color="steelblue", edgecolor="black")
+plt.title("Age Distribution of Insured Individuals")
+plt.xlabel("Age")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/Age_Distribution.png")
+plt.close()
+print("✅ Age distribution plot saved.")
+
+# 🎯 Gender Distribution
+plt.figure(figsize=(6, 4))
+sns.countplot(x="Gender", data=clean_data, color="coral")
+plt.title("Gender Distribution")
+plt.xlabel("Gender")
+plt.ylabel("Count")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/Gender_Distribution.png")
+plt.close()
+print("✅ Gender distribution plot saved.")
+
+# 🎯 Claim Cost Distribution
+plt.figure(figsize=(6, 4))
+sns.histplot(clean_data["ClaimCost"], bins=15, color="purple", edgecolor="black")
+plt.title("Claim Cost Distribution")
+plt.xlabel("Claim Cost (UGX)")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/ClaimCost_Distribution.png")
+plt.close()
+print("✅ Claim cost distribution plot saved.")
+
+```
+
+
+```{python}
+# Step 6: Generate simple EDA report (text)
+eda_report = f"""
+Week 3: Data Wrangling & Exploratory Analysis Report
+===================================================
+
+Number of records (raw): {len(raw_data)}
+Number of records (cleaned): {len(clean_data)}
+
+Summary Statistics:
+{clean_data.describe(include='all').to_string()}
+
+Missing values:
+{clean_data.isnull().sum().to_string()}
+
+Plots saved:
+- Age_Distribution.png
+- Gender_Distribution.png
+- Hospitalization_Frequency.png
+- ClaimCost_Distribution.png
+"""
+
+with open("C:/Users/HP/Desktop/Python Project/reports/Week3_EDA_Report.txt", "w", encoding="utf-8") as f:
+    f.write(eda_report)
+
+print("✅ EDA report saved to reports/Week3_EDA_Report.txt")
+print("/n Week 3 completed successfully!")
+```
+
+
+
+
+

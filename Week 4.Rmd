@@ -1,0 +1,146 @@
+# ================================
+# Week 4: Frequency–Severity Decomposition (Python Version)
+# ================================
+```{python}
+import os
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
+import matplotlib.pyplot as plt
+import seaborn as sns
+```
+
+```{python}
+# Step 1: Load cleaned dataset
+clean_file = "C:/Users/HP/Desktop/Python Project/data/clean/uganda_health_claims_clean.csv"
+if not os.path.exists(clean_file):
+    raise FileNotFoundError("Cleaned dataset not found. Please complete Week 3 first.")
+
+data = pd.read_csv(clean_file)
+print(f"✅ Cleaned dataset loaded from {clean_file}")
+
+```
+
+```{python}
+# Step 2: Data preparation
+data["Gender"] = data["Gender"].astype("category")
+data["Region"] = data["Region"].astype("category")
+data["Hospitalization"] = data["Hospitalization"].astype(int)
+```
+
+```{python}
+# Step 3: Frequency model (Poisson)
+freq_model = smf.glm(
+    formula="Hospitalization ~ Age + Gender + Region",
+    data=data,
+    family=sm.families.Poisson()
+).fit()
+print("\n✅ Frequency Model (Poisson) Summary:")
+print(freq_model.summary())
+
+# Predicted claim frequency
+data["Predicted_Frequency"] = freq_model.predict()
+
+# Step 4: Severity model (Gamma) for hospitalized cases
+severity_data = data[data["Hospitalization"] == 1].copy()
+sev_model = smf.glm(
+    formula="ClaimCost ~ Age + Gender + Region",
+    data=severity_data,
+    family=sm.families.Gamma(link=sm.families.links.log())
+).fit()
+print("\n✅ Severity Model (Gamma) Summary:")
+print(sev_model.summary())
+
+# Predicted severity
+severity_data["Predicted_Severity"] = sev_model.predict()
+
+# Step 5: Safe join and expected claim calculation
+# Normalize join keys
+data["Gender"] = data["Gender"].str.upper()
+data["Region"] = data["Region"].str.upper()
+severity_data["Gender"] = severity_data["Gender"].str.upper()
+severity_data["Region"] = severity_data["Region"].str.upper()
+
+# Join severity predictions
+merged = pd.merge(
+    data,
+    severity_data[["Age", "Gender", "Region", "Predicted_Severity"]],
+    on=["Age", "Gender", "Region"],
+    how="left"
+)
+
+# Fill missing severity predictions with 0
+merged["Predicted_Severity"] = merged["Predicted_Severity"].fillna(0)
+
+# Compute expected claim
+merged["Expected_Claim"] = merged["Predicted_Frequency"] * merged["Predicted_Severity"]
+```
+
+```{python}
+# Step 6: Save processed dataset
+os.makedirs("data/processed", exist_ok=True)
+merged.to_csv("C:/Users/HP/Desktop/Python Project/data/processed/ExpectedClaims.csv", index=False)
+print("✅ Expected claims saved ")
+```
+
+```{python}
+# Step 7: Save model summaries
+os.makedirs("reports", exist_ok=True)
+os.makedirs("models", exist_ok=True)
+
+with open("C:/Users/HP/Desktop/Python Project/reports/Week4_Frequency_Model_Summary.txt", "w") as f:
+    f.write(freq_model.summary().as_text())
+
+with open("C:/Users/HP/Desktop/Python Project/reports/Week4_Severity_Model_Summary.txt", "w") as f:
+    f.write(sev_model.summary().as_text())
+
+merged.to_csv("C:/Users/HP/Desktop/Python Project/reports/Week4_Freq_Sev_Predictions.csv", index=False)
+print("✅ Predictions saved to reports/Week4_Freq_Sev_Predictions.csv")
+```
+
+```{python}
+# Step 8: Visualization
+# Frequency vs Age
+plt.figure(figsize=(6, 4))
+sns.scatterplot(x="Age", y="Predicted_Frequency", data=merged, color="blue")
+sns.regplot(x="Age", y="Predicted_Frequency", data=merged, scatter=False, lowess=True, color="black")
+plt.title("Predicted Claim Frequency by Age")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/Frequency_by_Age.png")
+plt.close()
+
+# Severity vs Age
+plt.figure(figsize=(6, 4))
+sns.scatterplot(x="Age", y="Predicted_Severity", data=severity_data, color="darkred")
+sns.regplot(x="Age", y="Predicted_Severity", data=severity_data, scatter=False, lowess=True, color="black")
+plt.title("Predicted Claim Severity by Age")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/Severity_by_Age.png")
+plt.close()
+```
+
+```{python}
+# Step 9: Generate summary report
+report_text = f"""
+Week 4: Frequency–Severity Decomposition Report
+===============================================
+
+Model 1: Frequency (Poisson Regression)
+{freq_model.summary().as_text()}
+
+Model 2: Severity (Gamma Regression)
+{sev_model.summary().as_text()}
+
+Outputs:
+- reports/Week4_Freq_Sev_Predictions.csv
+- reports/Frequency_by_Age.png
+- reports/Severity_by_Age.png
+"""
+
+with open("C:/Users/HP/Desktop/Python Project/reports/Week4_Report.txt", "w") as f:
+    f.write(report_text)
+
+print("\n Week 4 completed successfully! Report saved ")
+```
+
+
