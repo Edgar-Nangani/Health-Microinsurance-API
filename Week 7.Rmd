@@ -1,0 +1,115 @@
+# ================================
+# WEEK 7: Profitability & Capital Modeling via Simulation
+# ================================
+```{python}
+import os
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+```
+
+```{python}
+# Step 1: Load Week 6 ML predicted premiums
+pred_path = "C:/Users/HP/Desktop/Python Project/data/ml/Week6_XGBoost_Predictions.csv"
+if not os.path.exists(pred_path):
+    raise FileNotFoundError("❌ Week 6 predictions not found. Complete Week 6 first.")
+
+data = pd.read_csv(pred_path)
+print("✅ Week 6 XGBoost predictions loaded.")
+```
+
+```{python}
+# Step 2: Define simulation parameters
+n_sim = 10000
+premium = data["Predicted_Premium"].values
+n_policyholders = len(premium)
+```
+
+```{python}
+
+# Step 3: Simulate claim occurrences and amounts
+np.random.seed(123)
+
+def simulate_portfolio(premium, n_sim):
+    total_claims = np.zeros(n_sim)
+    total_profit = np.zeros(n_sim)
+
+    for i in range(n_sim):
+        claim_occur = np.random.binomial(n=1, p=0.1, size=n_policyholders)
+        claim_amount = np.where(claim_occur == 1, np.random.gamma(shape=2, scale=20000, size=n_policyholders), 0)
+        total_claims[i] = claim_amount.sum()
+        total_profit[i] = premium.sum() - total_claims[i]
+
+    return pd.DataFrame({
+        "Total_Claims": total_claims,
+        "Total_Profit": total_profit
+    })
+```
+
+```{python}
+# Step 4: Run simulation
+sim_results = simulate_portfolio(premium, n_sim)
+print("✅ Simulation completed.")
+
+```
+
+```{python}
+# Step 5: Summarize results
+summary_stats = pd.DataFrame({
+    "Mean_Claims": [sim_results["Total_Claims"].mean()],
+    "SD_Claims": [sim_results["Total_Claims"].std()],
+    "Mean_Profit": [sim_results["Total_Profit"].mean()],
+    "SD_Profit": [sim_results["Total_Profit"].std()],
+    "VaR_95": [sim_results["Total_Profit"].quantile(0.05)],
+    "VaR_99": [sim_results["Total_Profit"].quantile(0.01)]
+})
+
+print("\nSimulation Summary:")
+print(summary_stats)
+```
+
+```{python}
+# Step 6: Save results
+os.makedirs("data/simulation", exist_ok=True)
+sim_results.to_csv("C:/Users/HP/Desktop/Python Project/data/simulation/Week7_Simulation_Results.csv", index=False)
+summary_stats.to_csv("C:/Users/HP/Desktop/Python Project/data/simulation/Week7_Simulation_Summary.csv", index=False)
+```
+
+```{python}
+# Step 7: Visualize profit distribution
+os.makedirs("reports", exist_ok=True)
+
+plt.figure(figsize=(6, 4))
+plt.hist(sim_results["Total_Profit"], bins=50, color="steelblue", edgecolor="black")
+plt.title("Distribution of Total Portfolio Profit")
+plt.xlabel("Total Profit")
+plt.ylabel("Frequency")
+plt.tight_layout()
+plt.savefig("C:/Users/HP/Desktop/Python Project/reports/Week7_Profit_Distribution.png")
+plt.close()
+```
+
+```{python}
+# Step 8: Generate report
+report_text = f"""
+WEEK 7: PROFITABILITY & CAPITAL MODELING VIA SIMULATION
+========================================================
+
+Simulation Summary Statistics:
+{summary_stats.to_string(index=False)}
+
+Outputs:
+- data/simulation/Week7_Simulation_Results.csv
+- data/simulation/Week7_Simulation_Summary.csv
+- reports/Week7_Profit_Distribution.png
+"""
+
+with open("C:/Users/HP/Desktop/Python Project/reports/Week7_Simulation_Report.txt", "w") as f:
+    f.write(report_text)
+
+print("\n Week 7 completed successfully! Report saved to reports/Week7_Simulation_Report.txt")
+```
+
+
+
+
