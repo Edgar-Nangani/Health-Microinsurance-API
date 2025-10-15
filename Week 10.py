@@ -20,7 +20,7 @@ st.markdown("This dashboard trains a model to predict insurance claims and estim
 # -----------------------------
 @st.cache_data
 def load_data():
-    return pd.read_csv("C:/Users/HP/Desktop/Python Project/data/processed/ExpectedClaims.csv")
+    return pd.read_csv("ExpectedClaims.csv")
 
 data = load_data()
 
