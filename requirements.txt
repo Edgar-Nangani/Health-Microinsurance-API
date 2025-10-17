@@ -1,0 +1,10 @@
+streamlit
+plotly.express
+pandas
+statsmodels
+numpy
+scikit-learn
+
+
+
+
